@@ -1,5 +1,6 @@
 import requests
 import selectorlib # Used to get data from the string format of the web page
+import smtplib, ssl # Used to open and write in gmail
 
 URL = "http://programmer100.pythonanywhere.com/tours/"
 # Sometimes some web pages do not get scrapped, so HEADERS is given so that page behaves as web page and is scrapped
@@ -23,17 +24,30 @@ def extract(source):
 	return value
 
 
-def send_email():
-	print("Email was sent.")
+def send_email(message):
+	host = "smtp.gmail.com"
+	port = 465
+	
+	username = "morer4851@gmail.com"
+	password = "ifawvsfkxzlfaemw"
+	
+	receiver = "morer6776@gmail.com"
+	context = ssl.create_default_context()
+	
+	with smtplib.SMTP_SSL(host, port, context=context) as server:
+		server.login(username, password)
+		server.sendmail(username, receiver, message)
+		
+	print("Email was sent!")
 	
 
-def store(extracted, filepath):
-	with open(filepath, "a") as file:
+def store(data, fpath):
+	with open(fpath, "a") as file:
 		file.write(extracted + '\n')
 		
 		
-def read(filepath):
-	with open(filepath, 'r') as file:
+def read(fpath):
+	with open(fpath, 'r') as file:
 		return file.read()
 
 
@@ -47,4 +61,4 @@ if __name__ == "__main__":
 		content = read(filepath)
 		if extracted not in content: # Which is not already saved
 			store(extracted, filepath)
-			send_email()
+			send_email(message="Hey, discovered a new event!")
