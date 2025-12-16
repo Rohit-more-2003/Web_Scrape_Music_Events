@@ -1,6 +1,7 @@
 import requests
-import selectorlib # Used to get data from the string format of the web page
+import selectorlib # Used to get data.db from the string format of the web page
 import smtplib, ssl # Used to open and write in gmail
+import time
 
 URL = "http://programmer100.pythonanywhere.com/tours/"
 # Sometimes some web pages do not get scrapped, so HEADERS is given so that page behaves as web page and is scrapped
@@ -52,13 +53,17 @@ def read(fpath):
 
 
 if __name__ == "__main__":
-	scraped = scrape(URL)
-	extracted = extract(scraped)
-	print(extracted)
-	
-	if extracted != "No upcoming tours": # There is tour!
+	while True:
+		scraped = scrape(URL)
+		extracted = extract(scraped)
+		print(extracted)
+		
 		filepath = "data.txt"
 		content = read(filepath)
-		if extracted not in content: # Which is not already saved
-			store(extracted, filepath)
-			send_email(message="Hey, discovered a new event!")
+		
+		if extracted != "No upcoming tours": # There is tour!
+			if extracted not in content: # Which is not already saved
+				store(extracted, filepath)
+				send_email(message="Hey, discovered a new event!")
+				
+		time.sleep(2)
