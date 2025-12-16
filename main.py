@@ -1,14 +1,12 @@
 import sqlite3
 import requests
-import selectorlib # Used to get data.db from the string format of the web page
-import smtplib, ssl # Used to open and write in gmail
+import selectorlib
+import smtplib, ssl
 import time
 
-# Create a database connection instance
 connection = sqlite3.connect("data.db")
 
 URL = "http://programmer100.pythonanywhere.com/tours/"
-# Sometimes some web pages do not get scrapped, so HEADERS is given so that page behaves as web page and is scrapped
 HEADERS = {
 	'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
 }
@@ -17,7 +15,7 @@ def scrape(url):
 	"""Scrape the page source from the url"""
 	response = requests.get(url, headers=HEADERS)
 	
-	source = response.text # returns web page in html.text format
+	source = response.text
 	return source
 
 
@@ -59,7 +57,6 @@ def read(extracted):
 	row = extracted.split(',')
 	row = [item.strip() for item in row]
 
-	# Create cursor instance for sql queries
 	cursor = connection.cursor()
 	
 	band, city, date = row
@@ -75,7 +72,7 @@ if __name__ == "__main__":
 		extracted = extract(scraped)
 		print(extracted)
 		
-		if extracted != "No upcoming tours": # There is tour!
+		if extracted != "No upcoming tours":
 			row = read(extracted)
 			if not row:
 				store(extracted)
