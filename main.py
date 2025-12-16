@@ -23,7 +23,28 @@ def extract(source):
 	return value
 
 
+def send_email():
+	print("Email was sent.")
+	
+
+def store(extracted, filepath):
+	with open(filepath, "a") as file:
+		file.write(extracted + '\n')
+		
+		
+def read(filepath):
+	with open(filepath, 'r') as file:
+		return file.read()
+
+
 if __name__ == "__main__":
 	scraped = scrape(URL)
 	extracted = extract(scraped)
 	print(extracted)
+	
+	if extracted != "No upcoming tours": # There is tour!
+		filepath = "data.txt"
+		content = read(filepath)
+		if extracted not in content: # Which is not already saved
+			store(extracted, filepath)
+			send_email()
