@@ -1,7 +1,11 @@
+import sqlite3
 import requests
 import selectorlib # Used to get data.db from the string format of the web page
 import smtplib, ssl # Used to open and write in gmail
 import time
+
+# Create a database connection instance
+connection = sqlite3.connect("data.db")
 
 URL = "http://programmer100.pythonanywhere.com/tours/"
 # Sometimes some web pages do not get scrapped, so HEADERS is given so that page behaves as web page and is scrapped
@@ -42,14 +46,27 @@ def send_email(message):
 	print("Email was sent!")
 	
 
-def store(data, fpath):
-	with open(fpath, "a") as file:
-		file.write(extracted + '\n')
+def store(extracted):
+	row = extracted.split(',')
+	row = [item.strip() for item in row]
+	
+	cursor = connection.cursor()
+	cursor.execute("INSERT INTO events VALUES(?,?,?)", row)
+	connection.commit()
 		
 		
-def read(fpath):
-	with open(fpath, 'r') as file:
-		return file.read()
+def read(extracted):
+	row = extracted.split(',')
+	row = [item.strip() for item in row]
+
+	# Create cursor instance for sql queries
+	cursor = connection.cursor()
+	
+	band, city, date = row
+	cursor.execute("SELECT * FROM events WHERE band=? AND city=? AND date=?", (band, city, date))
+	rows = cursor.fetchall()
+	print(rows)
+	return rows
 
 
 if __name__ == "__main__":
@@ -58,12 +75,10 @@ if __name__ == "__main__":
 		extracted = extract(scraped)
 		print(extracted)
 		
-		filepath = "data.txt"
-		content = read(filepath)
-		
 		if extracted != "No upcoming tours": # There is tour!
-			if extracted not in content: # Which is not already saved
-				store(extracted, filepath)
+			row = read(extracted)
+			if not row:
+				store(extracted)
 				send_email(message="Hey, discovered a new event!")
 				
 		time.sleep(2)
