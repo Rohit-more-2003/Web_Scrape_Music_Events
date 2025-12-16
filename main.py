@@ -1,84 +1,90 @@
 import sqlite3
 import requests
-import selectorlib # Used to get data.db from the string format of the web page
-import smtplib, ssl # Used to open and write in gmail
+import selectorlib
+import smtplib, ssl
 import time
 
-# Create a database connection instance
-connection = sqlite3.connect("data.db")
-
 URL = "http://programmer100.pythonanywhere.com/tours/"
-# Sometimes some web pages do not get scrapped, so HEADERS is given so that page behaves as web page and is scrapped
 HEADERS = {
 	'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
 }
 
-def scrape(url):
-	"""Scrape the page source from the url"""
-	response = requests.get(url, headers=HEADERS)
-	
-	source = response.text # returns web page in html.text format
-	return source
-
-
-def extract(source):
-	"""Extract the required information"""
-	extractor = selectorlib.Extractor.from_yaml_file("extract.yaml")
-	
-	value = extractor.extract(source)["tours"]
-	return value
-
-
-def send_email(message):
-	host = "smtp.gmail.com"
-	port = 465
-	
-	username = "morer4851@gmail.com"
-	password = "ifawvsfkxzlfaemw"
-	
-	receiver = "morer6776@gmail.com"
-	context = ssl.create_default_context()
-	
-	with smtplib.SMTP_SSL(host, port, context=context) as server:
-		server.login(username, password)
-		server.sendmail(username, receiver, message)
+class Event:
+	def scrape(self, url):
+		"""Scrape the page source from the url"""
+		response = requests.get(url, headers=HEADERS)
 		
-	print("Email was sent!")
+		source = response.text
+		return source
+	
+	
+	def extract(self, source):
+		"""Extract the required information"""
+		extractor = selectorlib.Extractor.from_yaml_file("extract.yaml")
+		
+		value = extractor.extract(source)["tours"]
+		return value
+
+
+class SendMail:
+	def send_email(self, message):
+		host = "smtp.gmail.com"
+		port = 465
+		
+		username = "morer4851@gmail.com"
+		password = "ifawvsfkxzlfaemw"
+		
+		receiver = "morer6776@gmail.com"
+		context = ssl.create_default_context()
+		
+		with smtplib.SMTP_SSL(host, port, context=context) as server:
+			server.login(username, password)
+			server.sendmail(username, receiver, message)
+			
+		print("Email was sent!")
 	
 
-def store(extracted):
-	row = extracted.split(',')
-	row = [item.strip() for item in row]
+class Database:
+	def __init__(self, db_path):
+		self.connection = sqlite3.connect(db_path)
 	
-	cursor = connection.cursor()
-	cursor.execute("INSERT INTO events VALUES(?,?,?)", row)
-	connection.commit()
+	
+	def store(self, extracted):
+		row = extracted.split(',')
+		row = [item.strip() for item in row]
+		
+		cursor = self.connection.cursor()
+		cursor.execute("INSERT INTO events VALUES(?,?,?)", row)
+		self.connection.commit()
 		
 		
-def read(extracted):
-	row = extracted.split(',')
-	row = [item.strip() for item in row]
-
-	# Create cursor instance for sql queries
-	cursor = connection.cursor()
+	def read(self, extracted):
+		row = extracted.split(',')
+		row = [item.strip() for item in row]
 	
-	band, city, date = row
-	cursor.execute("SELECT * FROM events WHERE band=? AND city=? AND date=?", (band, city, date))
-	rows = cursor.fetchall()
-	print(rows)
-	return rows
+		cursor = self.connection.cursor()
+		
+		band, city, date = row
+		cursor.execute("SELECT * FROM events WHERE band=? AND city=? AND date=?", (band, city, date))
+		rows = cursor.fetchall()
+		print(rows)
+		return rows
 
 
 if __name__ == "__main__":
 	while True:
-		scraped = scrape(URL)
-		extracted = extract(scraped)
+		event = Event()
+		scraped = event.scrape(URL)
+		extracted = event.extract(scraped)
 		print(extracted)
 		
-		if extracted != "No upcoming tours": # There is tour!
-			row = read(extracted)
+		if extracted != "No upcoming tours":
+			db = Database('data.db')
+			row = db.read(extracted)
 			if not row:
-				store(extracted)
-				send_email(message="Hey, discovered a new event!")
+				db.store(extracted)
+				
+				sm = SendMail()
+				sm.send_email(message="Hey, discovered a new event!")
 				
 		time.sleep(2)
