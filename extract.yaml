@@ -1,0 +1,2 @@
+tours: # id we create to parse in extract(source)[id] method
+  css: "#displaytimer" # id of the content to be extracted can be found source page or inspect
